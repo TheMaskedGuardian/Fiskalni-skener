@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black">
@@ -21,16 +22,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="12dp"
         android:layout_gravity="top"
-        android:background="#88000000">
+        android:background="#44000000">
 
         <ImageButton
             android:id="@+id/btn_close"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:src="@drawable/ic_close"
-            android:tint="@android:color/white"
+            app:tint="@android:color/white"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Zatvori" />
 
@@ -41,7 +43,7 @@
             android:text="Skeniraj QR kod"
             android:textColor="@android:color/white"
             android:textSize="18sp"
-            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
             android:gravity="center"
             android:layout_gravity="center_vertical" />
 
@@ -50,32 +52,41 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:src="@drawable/ic_flash"
-            android:tint="@android:color/white"
+            app:tint="@android:color/white"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Blic" />
 
     </LinearLayout>
 
-    <!-- Vizuelni okvir za skeniranje (centrirani kvadrat) -->
-    <LinearLayout
-        android:layout_width="250dp"
-        android:layout_height="250dp"
+    <!-- Vizuelni okvir za skeniranje -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="260dp"
+        android:layout_height="260dp"
         android:layout_gravity="center"
-        android:orientation="vertical"
-        android:background="@drawable/scanner_frame" />
+        app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/primary"
+        app:strokeWidth="3dp"
+        app:cardCornerRadius="24dp" />
 
     <!-- Upute korisniku -->
-    <TextView
-        android:layout_width="match_parent"
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:layout_marginBottom="80dp"
-        android:text="Postavite QR kod sa fiskalnog računa\nu označeni okvir"
-        android:textColor="@android:color/white"
-        android:textSize="14sp"
-        android:gravity="center"
-        android:paddingHorizontal="32dp"
-        android:background="#88000000"
-        android:paddingVertical="12dp" />
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="100dp"
+        app:cardBackgroundColor="#CC000000"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Postavite QR kod u okvir"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="10dp" />
+    </com.google.android.material.card.MaterialCardView>
 
 </FrameLayout>

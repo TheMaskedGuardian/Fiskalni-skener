@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0F172A"
+    android:background="?android:attr/windowBackground"
     android:orientation="vertical"
     android:padding="20dp">
 
@@ -12,9 +13,9 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="Prodavnica"
-        android:textColor="#F8FAFC"
+        android:textColor="@color/text_primary"
         android:textSize="24sp"
-        android:textStyle="bold" />
+        android:fontFamily="sans-serif-medium" />
 
     <TextView
         android:id="@+id/receiptDate"
@@ -23,19 +24,20 @@
         android:layout_marginTop="4dp"
         android:gravity="center"
         android:text="10.03.2026."
-        android:textColor="#94A3B8"
+        android:textColor="@color/text_secondary"
         android:textSize="16sp" />
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginVertical="20dp"
-        android:background="#1E293B" />
+        android:background="@color/divider" />
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:scrollbars="none">
 
         <LinearLayout
             android:id="@+id/itemsContainer"
@@ -48,38 +50,40 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginVertical="20dp"
-        android:background="#1E293B" />
+        android:background="@color/divider" />
 
     <TextView
         android:id="@+id/totalAmount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="right"
+        android:gravity="end"
         android:text="215,00 RSD"
-        android:textColor="#38BDF8"
+        android:textColor="@color/primary"
         android:textSize="32sp"
-        android:textStyle="bold" />
+        android:fontFamily="sans-serif-black" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnAddToCashew"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
+        android:layout_height="64dp"
         android:layout_marginTop="20dp"
-        android:backgroundTint="#38BDF8"
         android:text="DODAJ U CASHEW"
-        android:textColor="#0F172A"
         android:textSize="18sp"
-        android:textStyle="bold" />
+        android:textAllCaps="false"
+        app:cornerRadius="32dp"
+        android:backgroundTint="@color/primary"
+        android:textColor="@android:color/white" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnCopyClipboard"
+        style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
+        android:layout_height="56dp"
         android:layout_marginTop="12dp"
-        android:backgroundTint="#1E293B"
         android:text="KOPIRAJ U CLIPBOARD"
-        android:textColor="#F8FAFC"
         android:textSize="14sp"
-        android:textStyle="bold" />
+        android:textAllCaps="false"
+        app:cornerRadius="28dp"
+        android:textColor="@color/text_primary" />
 
 </LinearLayout>
