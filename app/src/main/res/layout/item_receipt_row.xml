@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Naziv artikla"
-        android:textColor="@color/text_primary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="16sp"
         android:fontFamily="sans-serif-medium" />
 
@@ -20,7 +20,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         android:text="1 x 100.00 = 100.00"
-        android:textColor="@color/text_secondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="14sp" />
 
 </LinearLayout>

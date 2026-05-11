@@ -14,7 +14,7 @@
         app:cardCornerRadius="24dp"
         app:cardElevation="0dp"
         app:strokeWidth="0dp"
-        app:cardBackgroundColor="@color/surface"
+        app:cardBackgroundColor="?attr/colorSurfaceContainer"
         android:layout_marginBottom="32dp">
 
         <ImageView
@@ -22,7 +22,7 @@
             android:layout_height="120dp"
             android:padding="24dp"
             android:src="@drawable/ic_qr_scanner"
-            app:tint="@color/primary" />
+            app:tint="?attr/colorPrimary" />
     </com.google.android.material.card.MaterialCardView>
 
     <TextView
@@ -31,7 +31,7 @@
         android:text="@string/app_name"
         android:textSize="32sp"
         android:fontFamily="sans-serif-medium"
-        android:textColor="@color/text_primary"
+        android:textColor="?attr/colorOnSurface"
         android:layout_marginBottom="12dp" />
 
     <TextView
@@ -39,7 +39,7 @@
         android:layout_height="wrap_content"
         android:text="Skenirajte QR kod sa srpskog fiskalnog računa\ni dodajte trošak u Cashew"
         android:textSize="16sp"
-        android:textColor="@color/text_secondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:gravity="center"
         android:lineSpacingExtra="4dp"
         android:layout_marginBottom="48dp" />
@@ -55,8 +55,8 @@
         android:insetBottom="0dp"
         app:cornerRadius="32dp"
         app:elevation="4dp"
-        android:backgroundTint="@color/primary"
-        android:textColor="@android:color/white" />
+        android:backgroundTint="?attr/colorPrimary"
+        android:textColor="?attr/colorOnPrimary" />
 
     <TextView
         android:id="@+id/tv_version"
@@ -64,7 +64,7 @@
         android:layout_height="wrap_content"
         android:text="v1.0"
         android:textSize="13sp"
-        android:textColor="@color/text_secondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:layout_marginTop="40dp" />
 
 </LinearLayout>
