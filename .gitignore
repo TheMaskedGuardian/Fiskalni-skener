@@ -1,0 +1,25 @@
+# Android build artifacts
+build/
+.gradle/
+app/build/
+
+# IDE settings
+.idea/
+*.iml
+.vscode/
+
+# Local configuration
+local.properties
+
+# Secrets
+secrets.xml
+google-services.json
+
+# System files
+.DS_Store
+Thumbs.db
+
+# APKs and bundles (they should be in Releases, not in code)
+*.apk
+*.aar
+*.jks
