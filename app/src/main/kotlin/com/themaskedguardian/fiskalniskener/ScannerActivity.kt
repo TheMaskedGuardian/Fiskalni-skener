@@ -7,11 +7,10 @@ import android.util.Size
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
-import androidx.camera.core.TorchState
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -25,130 +24,96 @@ import java.util.concurrent.Executors
 
 class ScannerActivity : AppCompatActivity() {
 
+    private lateinit var cameraExecutor: ExecutorService
     private lateinit var cameraView: PreviewView
-    private lateinit var btnFlash: ImageButton
-    private lateinit var btnClose: ImageButton
-
-    private val analyzerExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    private var camera: Camera? = null
-
-    @Volatile
-    private var detected = false
-
-    private val barcodeScanner = BarcodeScanning.getClient()
+    private var isScanning = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_scanner)
 
         cameraView = findViewById(R.id.camera_view)
-        btnFlash   = findViewById(R.id.btn_flash)
-        btnClose   = findViewById(R.id.btn_close)
+        findViewById<ImageButton>(R.id.btn_close).setOnClickListener { finish() }
 
-        btnClose.setOnClickListener { finish() }
-
-        btnFlash.setOnClickListener {
-            val isOn = camera?.cameraInfo?.torchState?.value == TorchState.ON
-            camera?.cameraControl?.enableTorch(!isOn)
-        }
-
+        cameraExecutor = Executors.newSingleThreadExecutor()
         startCamera()
     }
 
     private fun startCamera() {
-        val future = ProcessCameraProvider.getInstance(this)
-        future.addListener({
-            val provider = try {
-                future.get()
-            } catch (e: Exception) {
-                Toast.makeText(this, "Greška pri pokretanju kamere", Toast.LENGTH_SHORT).show()
-                return@addListener
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+
+        cameraProviderFuture.addListener({
+            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+
+            val preview = Preview.Builder().build().also {
+                it.setSurfaceProvider(cameraView.surfaceProvider)
             }
 
-            // Forsiramo 1080p rezoluciju za preview i analizu (bitno za sitne QR kodove)
             val resolutionSelector = ResolutionSelector.Builder()
-                .setResolutionStrategy(ResolutionStrategy(
-                    Size(1920, 1080),
-                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
-                ))
+                .setResolutionStrategy(ResolutionStrategy(Size(1920, 1080), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER))
                 .build()
 
-            val preview = Preview.Builder()
-                .setResolutionSelector(resolutionSelector)
-                .build().also {
-                    it.setSurfaceProvider(cameraView.surfaceProvider)
-                }
-
-            val imageAnalysis = ImageAnalysis.Builder()
+            val imageAnalyzer = ImageAnalysis.Builder()
                 .setResolutionSelector(resolutionSelector)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build().also {
-                    it.setAnalyzer(analyzerExecutor, ::analyzeImage)
+                .build()
+                .also {
+                    it.setAnalyzer(cameraExecutor) { imageProxy ->
+                        processImageProxy(imageProxy)
+                    }
                 }
 
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
             try {
-                provider.unbindAll()
-                camera = provider.bindToLifecycle(
-                    this,
-                    CameraSelector.DEFAULT_BACK_CAMERA,
-                    preview,
-                    imageAnalysis
-                )
-                // Automatski fokus na sredinu ekrana
-                camera?.cameraControl?.setLinearZoom(0.1f) // Lagani zum pomaže kod sitnih kodova
-            } catch (e: Exception) {
-                Toast.makeText(this, "Greška kamere: ${e.message}", Toast.LENGTH_SHORT).show()
+                cameraProvider.unbindAll()
+                val camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
+                camera.cameraControl.setLinearZoom(0.1f)
+            } catch (exc: Exception) {
+                Toast.makeText(this, "Greška pri pokretanju kamere", Toast.LENGTH_SHORT).show()
             }
+
         }, ContextCompat.getMainExecutor(this))
     }
 
     @SuppressLint("UnsafeOptInUsageError")
-    private fun analyzeImage(imageProxy: androidx.camera.core.ImageProxy) {
-        if (detected) {
+    private fun processImageProxy(imageProxy: ImageProxy) {
+        if (!isScanning) {
             imageProxy.close()
             return
         }
 
         val mediaImage = imageProxy.image
-        if (mediaImage == null) {
-            imageProxy.close()
-            return
-        }
+        if (mediaImage != null) {
+            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+            val scanner = BarcodeScanning.getClient()
 
-        val inputImage = InputImage.fromMediaImage(
-            mediaImage,
-            imageProxy.imageInfo.rotationDegrees
-        )
-
-        barcodeScanner.process(inputImage)
-            .addOnSuccessListener { barcodes ->
-                for (barcode in barcodes) {
-                    val url = barcode.rawValue ?: continue
-                    if (barcode.format == Barcode.FORMAT_QR_CODE &&
-                        url.contains("suf.purs.gov.rs") &&
-                        !detected
-                    ) {
-                        detected = true
-                        val intent = Intent(this, ConfirmationActivity::class.java)
-                        intent.putExtra(ConfirmationActivity.EXTRA_URL, url)
-                        startActivity(intent)
-                        finish()
-                        break
+            scanner.process(image)
+                .addOnSuccessListener { barcodes ->
+                    for (barcode in barcodes) {
+                        if (barcode.valueType == Barcode.TYPE_URL) {
+                            val url = barcode.url?.url ?: ""
+                            if (url.contains("suf.purs.gov.rs")) {
+                                isScanning = false
+                                val intent = Intent(this, ConfirmationActivity::class.java)
+                                intent.putExtra("RECEIPT_URL", url)
+                                startActivity(intent)
+                                finish()
+                                break
+                            }
+                        }
                     }
                 }
-            }
-            .addOnFailureListener { }
-            .addOnCompleteListener { imageProxy.close() }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        detected = false
+                .addOnCompleteListener {
+                    imageProxy.close()
+                }
+        } else {
+            imageProxy.close()
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        analyzerExecutor.shutdown()
-        barcodeScanner.close()
+        cameraExecutor.shutdown()
     }
 }

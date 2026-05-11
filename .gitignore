@@ -2,24 +2,40 @@
 build/
 .gradle/
 app/build/
+captures/
+.externalNativeBuild/
+.cxx/
 
 # IDE settings
 .idea/
 *.iml
 .vscode/
+.navigation/
 
 # Local configuration
 local.properties
 
-# Secrets
+# Secrets and keys
 secrets.xml
 google-services.json
+*.jks
+*.keystore
+*.pub
+*.pem
 
 # System files
 .DS_Store
 Thumbs.db
+*.log
 
-# APKs and bundles (they should be in Releases, not in code)
+# APKs and bundles
 *.apk
 *.aar
-*.jks
+*.ap_
+*.aab
+*.dex
+
+# Gradle
+.gradle
+gradle-app.setting
+!gradle-wrapper.jar

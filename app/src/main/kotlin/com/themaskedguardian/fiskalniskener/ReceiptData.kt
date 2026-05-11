@@ -20,19 +20,30 @@ data class ReceiptData(
     val invoiceNumber: String,
     val items: List<ReceiptItem>
 ) {
-    // Pomocna funkcija za pretvaranje svega u cistu latinicu
     fun sanitize(text: String): String {
-        var result = text
-        val cyrillic = "абвгдђежзијклљмнњопрстуфхцчџшАБВГДЂЕЖЗИЈКЛЉМНЊОПРСТУФХЦЧЏШ".toCharArray()
-        val latin = arrayOf("a","b","v","g","d","dj","e","z","z","i","j","k","l","lj","m","n","nj","o","p","r","s","t","u","f","h","c","c","dz","s",
-                            "A","B","V","G","D","Dj","E","Z","Z","I","J","K","L","Lj","M","N","Nj","O","P","R","S","T","U","F","H","C","C","Dz","S")
+        if (text.isEmpty()) return ""
         
-        for (i in cyrillic.indices) {
-            result = result.replace(cyrillic[i].toString(), latin[i])
+        val map = mapOf(
+            'а' to "a", 'б' to "b", 'в' to "v", 'г' to "g", 'д' to "d", 'ђ' to "dj", 'е' to "e", 'ж' to "z", 'з' to "z", 'и' to "i",
+            'ј' to "j", 'к' to "k", 'л' to "l", 'љ' to "lj", 'м' to "m", 'н' to "n", 'њ' to "nj", 'о' to "o", 'п' to "p", 'р' to "r",
+            'с' to "s", 'т' to "t", 'ћ' to "c", 'у' to "u", 'ф' to "f", 'х' to "h", 'ц' to "c", 'ч' to "c", 'џ' to "dz", 'ш' to "s",
+            'А' to "A", 'Б' to "B", 'В' to "V", 'Г' to "G", 'Д' to "D", 'Ђ' to "Dj", 'Е' to "E", 'Ж' to "Z", 'З' to "Z", 'И' to "I",
+            'Ј' to "J", 'К' to "K", 'Л' to "L", 'Љ' to "Lj", 'М' to "M", 'Н' to "N", 'њ' to "nj", 'О' to "O", 'П' to "P", 'Р' to "R",
+            'С' to "S", 'Т' to "T", 'Ћ' to "C", 'У' to "U", 'Ф' to "F", 'Х' to "H", 'Ц' to "C", 'Ч' to "C", 'џ' to "dz", 'Ш' to "S",
+            'š' to "s", 'đ' to "dj", 'č' to "c", 'ć' to "c", 'ž' to "z",
+            'Š' to "S", 'Đ' to "Dj", 'Č' to "C", 'Ć' to "C", 'Ž' to "Z"
+        )
+
+        val result = StringBuilder()
+        for (char in text) {
+            val replacement = map[char]
+            if (replacement != null) {
+                result.append(replacement)
+            } else if (char.code in 32..126) {
+                result.append(char)
+            }
         }
-        
-        return result.replace("ć", "c").replace("č", "c").replace("š", "s").replace("đ", "dj").replace("ž", "z")
-                     .replace("Ć", "C").replace("Č", "C").replace("Š", "S").replace("Đ", "Dj").replace("Ž", "Z")
+        return result.toString()
     }
 
     fun formatDate(): String {
@@ -62,32 +73,56 @@ data class ReceiptData(
         return try {
             val clean = dateTime.trim()
             if (clean.contains("/")) {
-                val dateStr = clean.split(" ")[0]
-                val p = dateStr.split("/")
-                "${p[2]}-${p[0].padStart(2, '0')}-${p[1].padStart(2, '0')}"
+                // Format: 10/3/2026 1:54:56 PM
+                val parts = clean.split(" ")
+                val dateParts = parts[0].split("/")
+                val timeParts = parts[1].split(":")
+                val isPm = parts.size >= 3 && parts[2].uppercase() == "PM"
+                
+                val y = dateParts[2]
+                val m = dateParts[0].padStart(2, '0')
+                val d = dateParts[1].padStart(2, '0')
+                
+                var hour = timeParts[0].toInt()
+                if (isPm && hour != 12) hour += 12
+                if (!isPm && hour == 12) hour = 0
+                
+                val hh = hour.toString().padStart(2, '0')
+                val mm = timeParts[1].padStart(2, '0')
+                val ss = timeParts[2].padStart(2, '0')
+                
+                "${y}-${m}-${d}T${hh}:${mm}:${ss}"
             } else {
-                val dateStr = clean.split(" ")[0].trimEnd('.')
+                // Format: 10.03.2026. 13:54:56
+                val parts = clean.split(" ")
+                val dateStr = parts[0].trimEnd('.')
                 val p = dateStr.split(".")
-                "${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}"
+                
+                val y = p[2]
+                val m = p[1].padStart(2, '0')
+                val d = p[0].padStart(2, '0')
+                
+                val timeStr = parts[1]
+                "${y}-${m}-${d}T${timeStr}"
             }
         } catch (e: Exception) {
             ""
         }
     }
 
-    fun formatAmount(): String {
-        // Za prikaz u aplikaciji (srpski standard sa zarezom)
-        return String.format(Locale("sr", "RS"), "%.2f", totalAmount)
+    fun toCashewNotes(): String {
+        return toFullNotes()
     }
 
-    fun toCashewNotes(): String {
+    fun toFullNotes(): String {
         val sb = StringBuilder()
+        val separator = "---"
         sb.appendLine("FISKALNI RACUN")
         sb.appendLine(sanitize(company))
         if (address.isNotEmpty()) sb.appendLine(sanitize(address))
         if (city.isNotEmpty()) sb.appendLine(sanitize(city))
         sb.appendLine("PIB: $tin")
-        sb.appendLine("---")
+        sb.appendLine(separator)
         
         for (item in items) {
             val qtyStr = if (item.quantity == Math.floor(item.quantity)) 
@@ -96,14 +131,20 @@ data class ReceiptData(
                 String.format(Locale.US, "%.2f", item.quantity)
             
             val totalStr = String.format(Locale.US, "%.2f", item.total)
+            val priceStr = String.format(Locale.US, "%.2f", item.unitPrice)
             
-            val name = sanitize(item.name)
-            val shortName = if (name.length > 20) name.substring(0, 17) + ".." else name
-            sb.appendLine("$shortName (${qtyStr}x) $totalStr")
+            sb.appendLine("- ${sanitize(item.name)}")
+            sb.appendLine("  ${qtyStr} x $priceStr = $totalStr RSD")
         }
         
-        sb.appendLine("---")
-        sb.appendLine("TOTAL: ${String.format(Locale.US, "%.2f", totalAmount)} RSD")
+        sb.appendLine(separator)
+        sb.appendLine("UKUPNO: ${String.format(Locale.US, "%.2f", totalAmount)} RSD")
+        sb.appendLine("Datum: ${formatDate()}")
+        sb.appendLine("Racun: $invoiceNumber")
         return sb.toString()
+    }
+
+    fun formatAmount(): String {
+        return String.format(Locale("sr", "RS"), "%.2f", totalAmount)
     }
 }
