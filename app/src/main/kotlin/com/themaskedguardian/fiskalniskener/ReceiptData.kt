@@ -33,7 +33,9 @@ data class ReceiptData(
             'š' to "s", 'đ' to "dj", 'č' to "c", 'ć' to "c", 'ž' to "z",
             'Š' to "S", 'Đ' to "Dj", 'Č' to "C", 'Ć' to "C", 'Ž' to "Z",
             '&' to "+",
-            '%' to "pct"
+            '%' to "pct",
+            '\n' to " ",
+            '\r' to " "
         )
 
         val result = StringBuilder()
@@ -43,9 +45,13 @@ data class ReceiptData(
                 result.append(replacement)
             } else if (char.code in 32..126) {
                 result.append(char)
+            } else if (char.isWhitespace()) {
+                result.append(' ')
+            } else {
+                result.append(' ')
             }
         }
-        return result.toString()
+        return result.toString().replace(Regex("\\s+"), " ").trim()
     }
 
     fun formatDate(): String {
@@ -118,7 +124,6 @@ data class ReceiptData(
         sb.appendLine("FISKALNI RACUN")
         sb.appendLine(sanitize(company))
         
-        // Adresa i grad idu u obe verzije
         if (address.isNotEmpty()) sb.appendLine(sanitize(address))
         if (city.isNotEmpty()) sb.appendLine(sanitize(city))
         
@@ -135,7 +140,6 @@ data class ReceiptData(
             val totalStr = String.format(Locale.US, "%.2f", item.total)
             val priceStr = String.format(Locale.US, "%.2f", item.unitPrice)
             
-            // Prefiks: nista za Cashew, emoji za Clipboard
             val prefix = if (isForCashew) "" else "✅ "
             
             sb.appendLine("${prefix}${sanitize(item.name)}")
@@ -149,7 +153,6 @@ data class ReceiptData(
         sb.appendLine(separator)
         sb.appendLine("UKUPNO: ${String.format(Locale.US, "%.2f", totalAmount)} RSD")
         
-        // Datum i broj racuna idu u obe verzije
         sb.appendLine("Datum: ${formatDate()}")
         sb.appendLine("Racun: $invoiceNumber")
         

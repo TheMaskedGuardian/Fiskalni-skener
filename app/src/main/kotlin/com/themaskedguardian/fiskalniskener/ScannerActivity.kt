@@ -7,12 +7,7 @@ import android.util.Size
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
-import androidx.camera.core.resolutionselector.ResolutionSelector
-import androidx.camera.core.resolutionselector.ResolutionStrategy
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
@@ -25,36 +20,47 @@ import java.util.concurrent.Executors
 class ScannerActivity : AppCompatActivity() {
 
     private lateinit var cameraExecutor: ExecutorService
-    private lateinit var cameraView: PreviewView
+    private lateinit var cameraProvider: ProcessCameraProvider
     private var isScanning = true
+    private var isFlashOn = false
+    private var camera: Camera? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_scanner)
 
-        cameraView = findViewById(R.id.camera_view)
-        findViewById<ImageButton>(R.id.btn_close).setOnClickListener { finish() }
+        val cameraView = findViewById<PreviewView>(R.id.camera_view)
+        val btnClose = findViewById<ImageButton>(R.id.btn_close)
+        val btnFlash = findViewById<ImageButton>(R.id.btn_flash)
+
+        btnClose.setOnClickListener { finish() }
+
+        btnFlash.setOnClickListener {
+            isFlashOn = !isFlashOn
+            camera?.cameraControl?.enableTorch(isFlashOn)
+            btnFlash.setImageResource(R.drawable.ic_flash)
+        }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
-        startCamera()
+        startCamera(cameraView)
     }
 
-    private fun startCamera() {
+    private fun startCamera(cameraView: PreviewView) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener({
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+            cameraProvider = cameraProviderFuture.get()
 
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(cameraView.surfaceProvider)
-            }
+            // Postavljamo visoku rezoluciju za preview
+            val preview = Preview.Builder()
+                .setTargetResolution(Size(1920, 1080))
+                .build().also {
+                    it.setSurfaceProvider(cameraView.surfaceProvider)
+                }
 
-            val resolutionSelector = ResolutionSelector.Builder()
-                .setResolutionStrategy(ResolutionStrategy(Size(1920, 1080), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER))
-                .build()
-
+            // Postavljamo visoku rezoluciju i za analizator - ovo je ključno za oštrinu
             val imageAnalyzer = ImageAnalysis.Builder()
-                .setResolutionSelector(resolutionSelector)
+                .setTargetResolution(Size(1920, 1080))
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
                 .also {
@@ -67,8 +73,7 @@ class ScannerActivity : AppCompatActivity() {
 
             try {
                 cameraProvider.unbindAll()
-                val camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
-                camera.cameraControl.setLinearZoom(0.1f)
+                camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
             } catch (exc: Exception) {
                 Toast.makeText(this, "Greška pri pokretanju kamere", Toast.LENGTH_SHORT).show()
             }
@@ -86,9 +91,9 @@ class ScannerActivity : AppCompatActivity() {
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            val scanner = BarcodeScanning.getClient()
-
-            scanner.process(image)
+            
+            // Koristimo najbrži direktan pristup skeneru
+            BarcodeScanning.getClient().process(image)
                 .addOnSuccessListener { barcodes ->
                     for (barcode in barcodes) {
                         if (barcode.valueType == Barcode.TYPE_URL) {

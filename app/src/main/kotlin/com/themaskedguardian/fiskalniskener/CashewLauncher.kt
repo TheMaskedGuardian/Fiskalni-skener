@@ -22,17 +22,15 @@ object CashewLauncher {
                 .build()
 
             val intent = Intent(Intent.ACTION_VIEW, uri)
-            intent.setPackage("app.cashew.cashew")
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-            if (intent.resolveActivity(context.packageManager) != null) {
+            if (intent.resolveActivity(context.packageManager) != null || true) {
                 context.startActivity(intent)
             } else {
-                val generalIntent = Intent(Intent.ACTION_VIEW, uri)
-                context.startActivity(generalIntent)
+                Toast.makeText(context, "Nije pronađena aplikacija za obradu linka", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
-            Toast.makeText(context, "Greška pri otvaranju Cashew aplikacije", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Greška pri pokretanju: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
         }
     }
 }

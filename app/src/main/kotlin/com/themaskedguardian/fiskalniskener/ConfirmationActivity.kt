@@ -3,7 +3,6 @@ package com.themaskedguardian.fiskalniskener
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -15,25 +14,25 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 class ConfirmationActivity : AppCompatActivity() {
 
     private var receipt: ReceiptData? = null
     private val activityJob = Job()
     private val uiScope = CoroutineScope(Dispatchers.Main + activityJob)
-    private var receiptUrl: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_confirmation)
 
-        receiptUrl = intent.getStringExtra("RECEIPT_URL") ?: ""
-        if (receiptUrl.isEmpty()) {
+        val url = intent.getStringExtra("RECEIPT_URL") ?: ""
+        if (url.isEmpty()) {
             finish()
             return
         }
 
-        fetchData(receiptUrl)
+        fetchData(url)
 
         findViewById<Button>(R.id.btnAddToCashew).setOnClickListener {
             receipt?.let {
@@ -49,7 +48,7 @@ class ConfirmationActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btnRetry).setOnClickListener {
-            fetchData(receiptUrl)
+            fetchData(url)
         }
 
         findViewById<Button>(R.id.btnCloseError).setOnClickListener {
@@ -58,6 +57,11 @@ class ConfirmationActivity : AppCompatActivity() {
     }
 
     private fun fetchData(url: String) {
+        if (!NetworkUtil.isOnline(this)) {
+            showError("Nema internet veze. Proverite podešavanja mreže.")
+            return
+        }
+
         showLoading()
         uiScope.launch {
             try {
@@ -66,10 +70,12 @@ class ConfirmationActivity : AppCompatActivity() {
                 updateUI(data)
                 showContent()
             } catch (e: Exception) {
-                val errorMessage = if (e.message?.contains("timeout", ignoreCase = true) == true) {
-                    "Server Poreske uprave ne odgovara (Timeout)"
-                } else {
-                    "Greška pri učitavanju: ${e.localizedMessage}"
+                val errorMessage = when {
+                    e.message?.contains("timeout", ignoreCase = true) == true -> 
+                        "Server Poreske uprave ne odgovara (Timeout)"
+                    e is java.net.UnknownHostException -> 
+                        "Nije moguće uspostaviti vezu sa serverom. Proverite internet."
+                    else -> "Greška pri učitavanju: ${e.localizedMessage}"
                 }
                 showError(errorMessage)
             }
